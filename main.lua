@@ -1,13 +1,12 @@
--- Constants
+
 local TILE_SIZE = 32
 local CHUNK_SIZE = 16
 local MAP_HEIGHT = 20
 local MAP_WIDTH = 1000
 local CLOUD_COUNT = 5
-local TREE_CHANCE = 0.2  -- Chance of tree spawning
-local TREE_HEIGHT = 5    -- Height of trees in tiles
+local TREE_CHANCE = 0.2
+local TREE_HEIGHT = 5
 
--- Cloud system
 local clouds = {}
 local function createCloud(minX, maxX)
     return {
@@ -22,17 +21,15 @@ for i = 1, CLOUD_COUNT do
     clouds[i] = createCloud(0, 1000)
 end
 
--- Font for coordinates
 local pixelFont = love.graphics.newFont(16)
 local PLAYER_SPEED = 200
 local GRAVITY = 800
 local JUMP_POWER = -400
 
--- Game state
 local terrain = {}
 local player = {
     x = 100,
-    y = 0,  -- Will be set after initial terrain generation
+    y = 0,
     width = 32,
     height = 32,
     velocityX = 0,
@@ -58,16 +55,16 @@ local xp = 0
 local PIG_SPEED = 100
 local SUPER_HARD_MODE = false
 local PIG_SPAWN_CHANCE = 0.01
-local RED_PIG_SPAWN_CHANCE = 0.02   -- Higher chance for red pigs (1%)
+local RED_PIG_SPAWN_CHANCE = 0.02
 local MAX_HEALTH = 5
 local health = MAX_HEALTH
 local INVINCIBILITY_TIME = 1
 local invincibilityTimer = 0
 local gameOver = false
-local gameState = "intro"  -- "intro", "playing", "paused", "dead"
+local gameState = "intro"
 local survivalTime = 0
 local highScore = 0
-local trees = {}  -- Store tree positions and seeds: {x = x, y = y, seed = seed}
+local trees = {}
 
 function drawButton(text, x, y, w, h)
     love.graphics.setColor(0.3, 0.3, 0.3)
@@ -78,10 +75,8 @@ function drawButton(text, x, y, w, h)
            y <= love.mouse.getY() and love.mouse.getY() <= y + h
 end
 
--- Initialize game
 function love.load()
-    generateChunk(0) -- Generate initial chunk
-    -- Initialize fire particle system prototype
+    generateChunk(0)
     local particleCanvas = love.graphics.newCanvas(4, 4)
     love.graphics.setCanvas(particleCanvas)
     love.graphics.setColor(1, 0.5, 0)
@@ -99,21 +94,19 @@ function generateChunk(chunkX)
         end
 
         for x = 1, CHUNK_SIZE do
-            if love.math.random() < 0.2 then  -- 20% chance to change height
+            if love.math.random() < 0.2 then
                 height = height + love.math.random(-1, 1)
             end
-            height = math.floor(height)  -- Ensure height is a whole number
+            height = math.floor(height)
             height = math.min(math.max(height, MAP_HEIGHT/4), MAP_HEIGHT-5)
 
             terrain[chunkX][x] = {height = height}
             if chunkX == 0 and x == 1 then
                 player.y = (height - 2) * TILE_SIZE
             end
-            -- Generate trees only on grass blocks
             if x > 1 and love.math.random() < TREE_CHANCE then
                 local treeX = (chunkX * CHUNK_SIZE + x - 1) * TILE_SIZE
                 local treeY = (height - 1) * TILE_SIZE
-                -- Check if there's enough space between trees
                 local tooClose = false
                 for _, tree in ipairs(trees) do
                     if math.abs(tree.x - treeX) < TILE_SIZE * 4 then
@@ -137,19 +130,15 @@ function drawTile(type, x, y)
     if type == "dirt" then
         love.graphics.setColor(colors.dirt)
         love.graphics.rectangle("fill", x, y, TILE_SIZE, TILE_SIZE)
-        -- Add some pixel details
         love.graphics.setColor(0.5, 0.3, 0.1)
         for i = 0, 3 do
             love.graphics.rectangle("fill", x + i*8, y + (i%2)*8, 4, 4)
         end
     elseif type == "grass" then
-        -- Dirt base
         love.graphics.setColor(colors.dirt)
         love.graphics.rectangle("fill", x, y, TILE_SIZE, TILE_SIZE)
-        -- Grass top
         love.graphics.setColor(colors.grass)
         love.graphics.rectangle("fill", x, y, TILE_SIZE, 8)
-        -- Grass details
         love.graphics.setColor(0.1, 0.6, 0.1)
         for i = 0, 3 do
             love.graphics.rectangle("fill", x + i*8, y, 4, 12)
@@ -158,10 +147,8 @@ function drawTile(type, x, y)
 end
 
 function drawPlayer(x, y)
-    -- Main body
     love.graphics.setColor(colors.player)
     love.graphics.rectangle("fill", x, y, player.width, player.height)
-    -- Details
     love.graphics.setColor(0.9, 0.3, 0.3)
     love.graphics.rectangle("fill", x + 8, y + 8, 16, 16)
     love.graphics.setColor(1, 1, 1)
@@ -169,7 +156,7 @@ function drawPlayer(x, y)
 end
 
 function love.mousepressed(x, y, button)
-    if button == 1 then  -- Left click
+    if button == 1 then
         if gameState == "intro" then
             local w, h = 200, 50
             local bx = love.graphics.getWidth()/2 - w/2
@@ -188,7 +175,6 @@ function love.mousepressed(x, y, button)
         local worldX = x + camera.x
         local worldY = y
         
-        -- Check for pig collision
         for i = #pigs, 1, -1 do
             local pig = pigs[i]
             if worldX >= pig.x and worldX <= pig.x + pig.width and
@@ -199,7 +185,6 @@ function love.mousepressed(x, y, button)
             end
         end
         
-        -- Check for tree collision
         for i = #trees, 1, -1 do
             local tree = trees[i]
             if worldX >= tree.x and worldX <= tree.x + TILE_SIZE * 3 and
@@ -222,7 +207,7 @@ function checkTreeCollision(x, y, width, height)
 end
 
 function spawnPig(x, y, isRed)
-    local width = isRed and 96 or 32  -- 3x size for red pigs
+    local width = isRed and 96 or 32
     local height = isRed and 96 or 32
     table.insert(pigs, {
         x = x,
@@ -259,7 +244,6 @@ function updatePig(pig, dt)
     local newX = pig.x + pig.velocityX * dt
     local newY = pig.y + pig.velocityY * dt
     
-    -- Ground collision
     local tileX = math.floor(newX / TILE_SIZE)
     local chunkX = math.floor(tileX / CHUNK_SIZE)
     local localX = (tileX % CHUNK_SIZE) + 1
@@ -299,7 +283,6 @@ function love.update(dt)
     end
 
     if love.keyboard.isDown('r') then
-        -- Reset game
         health = MAX_HEALTH
         gameOver = false
         xp = 0
@@ -313,7 +296,6 @@ function love.update(dt)
         invincibilityTimer = invincibilityTimer - dt
     end
 
-    -- Check pig collision with player
     if invincibilityTimer <= 0 then
         for i = #pigs, 1, -1 do
             local pig = pigs[i]
@@ -355,7 +337,6 @@ function love.update(dt)
     local newX = player.x + player.velocityX * dt
     local newY = player.y + player.velocityY * dt
 
-    -- Check collisions
     local function checkCollision(x, y)
         local tileX = math.floor(x / TILE_SIZE)
         local tileY = math.floor(y / TILE_SIZE)
@@ -371,13 +352,12 @@ function love.update(dt)
 
     player.isGrounded = false
 
-    -- Check multiple points for vertical collision
     local checkPoints = {
-        {newX + 2, newY + player.height},             -- Left foot
-        {newX + player.width - 2, newY + player.height}, -- Right foot
-        {newX + player.width/2, newY + player.height},   -- Middle foot
-        {newX + 2, newY},                               -- Left head
-        {newX + player.width - 2, newY}                 -- Right head
+        {newX + 2, newY + player.height},
+        {newX + player.width - 2, newY + player.height},
+        {newX + player.width/2, newY + player.height},
+        {newX + 2, newY},
+        {newX + player.width - 2, newY}
     }
 
     for _, point in ipairs(checkPoints) do
@@ -394,7 +374,6 @@ function love.update(dt)
         end
     end
 
-    -- Horizontal collision with some vertical tolerance
     if checkCollision(newX, newY + player.height - 4) or 
        checkCollision(newX + player.width, newY + player.height - 4) or
        checkTreeCollision(newX, newY, player.width, player.height) then
@@ -402,7 +381,6 @@ function love.update(dt)
         player.velocityX = 0
     end
 
-    -- Keep player within map bounds
     newY = math.min(newY, (MAP_HEIGHT-1) * TILE_SIZE - player.height)
     newY = math.max(newY, 0)
 
@@ -411,7 +389,6 @@ function love.update(dt)
 
     camera.x = player.x - love.graphics.getWidth() / 2
     
-    -- Random pig spawning
     if love.math.random() < PIG_SPAWN_CHANCE then
         local spawnX = camera.x + love.math.random(0, love.graphics.getWidth())
         local chunkX = math.floor(spawnX / TILE_SIZE / CHUNK_SIZE)
@@ -424,24 +401,19 @@ function love.update(dt)
         end
     end
     
-    -- Update pigs
     for i = #pigs, 1, -1 do
         updatePig(pigs[i], dt)
-        -- Remove pigs that are too far from the camera
         if math.abs(pigs[i].x - camera.x - love.graphics.getWidth()/2) > love.graphics.getWidth() then
             table.remove(pigs, i)
         end
     end
 
-    -- Update clouds
     for i, cloud in ipairs(clouds) do
         cloud.x = cloud.x + cloud.speed * dt
-        -- If cloud is too far behind camera, move it ahead
         if cloud.x < camera.x - cloud.width * 2 then
             cloud.x = camera.x + love.graphics.getWidth() + love.math.random(0, 200)
             cloud.y = love.math.random(0, 100)
         end
-        -- If cloud is too far ahead of camera, move it behind
         if cloud.x > camera.x + love.graphics.getWidth() * 2 then
             cloud.x = camera.x - cloud.width - love.math.random(0, 200)
             cloud.y = love.math.random(0, 100)
@@ -452,30 +424,22 @@ end
 function drawTree(x, y, seed)
     local rng = love.math.newRandomGenerator(seed)
     
-    -- Randomize trunk properties
     local trunkWidth = TILE_SIZE/3 + rng:random(-5, 5)
     local trunkHeight = TILE_SIZE * (2.5 + rng:random(0, 1))
     local trunkOffset = TILE_SIZE/3 + rng:random(-5, 5)
     
-    -- Draw trunk
     love.graphics.setColor(colors.trunk)
     love.graphics.rectangle("fill", x + trunkOffset, y, trunkWidth, trunkHeight)
     
-    -- Randomize leaf properties
     local leafWidth = TILE_SIZE * (0.8 + rng:random(-0.2, 0.2))
     local leafHeight = TILE_SIZE * (2.2 + rng:random(-0.2, 0.2))
     local leafOffset = rng:random(-5, 5)
     
-    -- Draw leaves in pixel art style
     love.graphics.setColor(colors.leaves)
-    -- Bottom layer (wider)
     love.graphics.rectangle("fill", x + leafOffset, y - TILE_SIZE, leafWidth, TILE_SIZE)
-    -- Middle layer
     love.graphics.rectangle("fill", x + leafOffset + TILE_SIZE/4, y - TILE_SIZE * 2, leafWidth * 0.7, TILE_SIZE)
-    -- Top point
     love.graphics.rectangle("fill", x + leafOffset + TILE_SIZE/3, y - TILE_SIZE * 2.5, leafWidth * 0.4, TILE_SIZE/2)
     
-    -- Add random darker pixel details
     love.graphics.setColor(0.05, 0.4, 0.05)
     for i = 1, 3 do
         local detailX = x + leafOffset + rng:random(0, leafWidth)
@@ -485,11 +449,9 @@ function drawTree(x, y, seed)
 end
 
 function love.draw()
-    -- Draw sky
     love.graphics.setColor(0.4, 0.6, 1)
     love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
 
-    -- Draw clouds
     love.graphics.setColor(1, 1, 1)
     for _, cloud in ipairs(clouds) do
         local screenX = cloud.x - camera.x
@@ -519,14 +481,11 @@ function love.draw()
         end
     end
 
-    -- Draw trees
     for _, tree in ipairs(trees) do
         drawTree(tree.x, tree.y, tree.seed)
     end
     
-    -- Draw pigs
     for _, pig in ipairs(pigs) do
-        -- Draw fire particles for red pigs
         if pig.particles then
             love.graphics.setColor(1, 1, 1)
             pig.particles:setPosition(pig.x + pig.width/2, pig.y + pig.height/2)
@@ -534,31 +493,28 @@ function love.draw()
         end
         
         if pig.isRed then
-            love.graphics.setColor(1, 0, 0)  -- Red pig
+            love.graphics.setColor(1, 0, 0)
         else
             love.graphics.setColor(colors.pig)
         end
         love.graphics.rectangle("fill", pig.x, pig.y, pig.width, pig.height)
-        -- Draw pig details
         if pig.isRed then
             love.graphics.setColor(0.8, 0, 0)
         else
             love.graphics.setColor(0.8, 0.6, 0.6)
         end
-        love.graphics.rectangle("fill", pig.x + 24, pig.y + 8, 8, 8) -- Nose
+        love.graphics.rectangle("fill", pig.x + 24, pig.y + 8, 8, 8)
         love.graphics.setColor(0, 0, 0)
-        love.graphics.rectangle("fill", pig.x + 8, pig.y + 8, 4, 4) -- Eye
+        love.graphics.rectangle("fill", pig.x + 8, pig.y + 8, 4, 4)
     end
     
     drawPlayer(player.x, player.y)
 
     love.graphics.pop()
     
-    -- Draw XP counter and health
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("XP: " .. xp, love.graphics.getWidth() - 100, 10)
     
-    -- Draw hearts
     for i = 1, MAX_HEALTH do
         if i <= health then
             love.graphics.setColor(1, 0, 0)
@@ -568,7 +524,6 @@ function love.draw()
         love.graphics.rectangle("fill", 10 + (i-1) * 30, 40, 20, 20)
     end
 
-    -- Draw menus
     if gameState == "intro" then
         love.graphics.setColor(0, 0, 0, 0.7)
         love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
@@ -622,7 +577,6 @@ function love.draw()
             player.y = 0
         end
     end
-    -- Draw coordinates (after pop to keep them fixed on screen)
     love.graphics.setFont(pixelFont)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(string.format("X: %d Y: %d", math.floor(player.x), math.floor(player.y)), 10, 10)
